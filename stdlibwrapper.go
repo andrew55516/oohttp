@@ -1,6 +1,11 @@
 package http
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
+
+const ConnCloserFuncKey = "connCloserFunc"
 
 // StdlibTransport is an adapter for integrating net/http dependend code.
 // It looks like an http.RoundTripper but uses this fork internally.
@@ -51,7 +56,7 @@ func (txp *StdlibTransport) RoundTrip(stdReq *http.Request) (*http.Response, err
 		Close:            resp.Close,
 		Uncompressed:     resp.Uncompressed,
 		Trailer:          http.Header(resp.Trailer),
-		Request:          stdReq,
+		Request:          stdReq.WithContext(context.WithValue(stdReq.Context(), ConnCloserFuncKey, resp.ConnCloserFunc)),
 		TLS:              resp.TLS,
 	}
 	return stdResp, nil
