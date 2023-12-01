@@ -602,6 +602,7 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 		}
 		if err == nil {
 			resp.Request = origReq
+			resp.ConnCloserFunc = pconn.close
 			return resp, nil
 		}
 
@@ -619,10 +620,12 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 			if e, ok := err.(transportReadFromServerError); ok {
 				err = e.err
 			}
+			pconn.close(err)
 			return nil, err
 		}
 		testHookRoundTripRetried()
 
+		pconn.close(err)
 		// Rewind the body if we're able to.
 		req, err = rewindBody(req)
 		if err != nil {
@@ -1802,7 +1805,6 @@ var _ io.ReaderFrom = (*persistConnWriter)(nil)
 //	socks5://proxy.com|https|foo.com  socks5 to proxy, then https to foo.com
 //	https://proxy.com|https|foo.com   https to proxy, then CONNECT to foo.com
 //	https://proxy.com|http            https to proxy, http to anywhere after that
-//
 type connectMethod struct {
 	_            incomparable
 	proxyURL     *url.URL // nil for no proxy, else full proxy URL

@@ -119,6 +119,9 @@ type Response struct {
 	// The pointer is shared between responses and should not be
 	// modified.
 	TLS *tls.ConnectionState
+
+	// ConnCloserFunc closes the connection which was used to obtain the response.
+	ConnCloserFunc func(err error)
 }
 
 // Cookies parses and returns the cookies set in the Set-Cookie headers.
@@ -205,8 +208,11 @@ func ReadResponse(r *bufio.Reader, req *Request) (*Response, error) {
 }
 
 // RFC 7234, section 5.4: Should treat
+//
 //	Pragma: no-cache
+//
 // like
+//
 //	Cache-Control: no-cache
 func fixPragmaCacheControl(header Header) {
 	if hp, ok := header["Pragma"]; ok && len(hp) > 0 && hp[0] == "no-cache" {
@@ -228,15 +234,15 @@ func (r *Response) ProtoAtLeast(major, minor int) bool {
 //
 // This method consults the following fields of the response r:
 //
-//  StatusCode
-//  ProtoMajor
-//  ProtoMinor
-//  Request.Method
-//  TransferEncoding
-//  Trailer
-//  Body
-//  ContentLength
-//  Header, values for non-canonical keys will have unpredictable behavior
+//	StatusCode
+//	ProtoMajor
+//	ProtoMinor
+//	Request.Method
+//	TransferEncoding
+//	Trailer
+//	Body
+//	ContentLength
+//	Header, values for non-canonical keys will have unpredictable behavior
 //
 // The Response Body is closed after it is sent.
 func (r *Response) Write(w io.Writer) error {
