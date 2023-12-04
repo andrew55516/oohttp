@@ -620,12 +620,10 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 			if e, ok := err.(transportReadFromServerError); ok {
 				err = e.err
 			}
-			pconn.close(err)
 			return nil, err
 		}
 		testHookRoundTripRetried()
 
-		pconn.close(err)
 		// Rewind the body if we're able to.
 		req, err = rewindBody(req)
 		if err != nil {
