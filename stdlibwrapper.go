@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-const ConnCloserFuncKey = "connCloserFunc"
+const connCloserFuncKey = "connCloserFuncKey"
 
 // StdlibTransport is an adapter for integrating net/http dependend code.
 // It looks like an http.RoundTripper but uses this fork internally.
@@ -56,8 +56,14 @@ func (txp *StdlibTransport) RoundTrip(stdReq *http.Request) (*http.Response, err
 		Close:            resp.Close,
 		Uncompressed:     resp.Uncompressed,
 		Trailer:          http.Header(resp.Trailer),
-		Request:          stdReq.WithContext(context.WithValue(stdReq.Context(), ConnCloserFuncKey, resp.ConnCloserFunc)),
+		Request:          stdReq.WithContext(context.WithValue(stdReq.Context(), connCloserFuncKey, resp.ConnCloserFunc)),
 		TLS:              resp.TLS,
 	}
 	return stdResp, nil
+}
+
+func CloseUsedConnection(resp *http.Response, err error) {
+	if resp != nil && resp.Request.Context().Value(connCloserFuncKey) != nil {
+		resp.Request.Context().Value(connCloserFuncKey).(func(err error))(err)
+	}
 }
