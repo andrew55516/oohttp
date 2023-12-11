@@ -602,7 +602,9 @@ func (t *Transport) roundTrip(req *Request) (*Response, error) {
 		}
 		if err == nil {
 			resp.Request = origReq
-			resp.ConnCloserFunc = pconn.close
+			if resp.ConnCloserFunc == nil {
+				resp.ConnCloserFunc = pconn.close
+			}
 			return resp, nil
 		}
 
